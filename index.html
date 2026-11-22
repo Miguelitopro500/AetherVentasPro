@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-accent="cyan">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AETHER VAULT • Economía & Bóveda</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Cliente oficial de Supabase para GitHub Pages -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Fondo neón difuminado en azul -->
+  <div class="neon-backdrop" aria-hidden="true">
+    <div class="neon-orb orb-1"></div>
+    <div class="neon-orb orb-2"></div>
+    <div class="neon-grid"></div>
+  </div>
+
+  <!-- =========================================================
+       PANTALLA 0: PUERTA DE CLAVE UNIVERSAL (OBLIGATORIA)
+       ========================================================= -->
+  <section id="screen-universal" class="auth-wrapper">
+    <div class="glass-card gate-box">
+      <div class="badge-pill">ACCESO RESTRINGIDO</div>
+      <div class="brand-emblem" id="secret-trigger-gate" title="Núcleo">◈</div>
+      <h1>AETHER VAULT</h1>
+      <p class="muted">
+        Este sistema es privado. Ingresa la <strong>Clave Universal</strong> entregada por el administrador para continuar.
+      </p>
+      <form id="form-universal" autocomplete="off">
+        <div class="input-row">
+          <input
+            type="password"
+            id="inp-universal-key"
+            placeholder="Clave universal de acceso"
+            autocomplete="new-password"
+            required
+          />
+          <button type="button" class="btn-ghost toggle-pass" data-target="inp-universal-key">Ver</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Verificar Puerta</button>
+      </form>
+      <div class="msg-box" id="msg-universal"></div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       PANTALLA 1: REGISTRO / INICIO DE SESIÓN CON AVATAR
+       ========================================================= -->
+  <section id="screen-auth" class="auth-wrapper hidden">
+    <div class="glass-card auth-box">
+      <div class="badge-pill">IDENTIFICACIÓN DE CUENTA</div>
+      <h2>Entrar o Crear Cuenta</h2>
+      <div class="alert-warn">
+        <strong>Aviso importante:</strong> Una vez creada tu cuenta, tu <u>nombre de usuario</u> y tu <u>contraseña</u> <strong>no se podrán cambiar</strong>. Solo podrás cambiar tu avatar más adelante.
+      </div>
+
+      <div class="switch-tabs" id="auth-mode-tabs">
+        <button type="button" class="sw-btn active" data-authmode="login">Iniciar Sesión</button>
+        <button type="button" class="sw-btn" data-authmode="register">Crear Cuenta Nueva</button>
+      </div>
+
+      <form id="form-auth" autocomplete="off">
+        <label class="field-label" for="inp-auth-user">Usuario (único)</label>
+        <input
+          type="text"
+          id="inp-auth-user"
+          maxlength="20"
+          placeholder="Ej. jonathan_pro"
+          autocomplete="off"
+          required
+        />
+
+        <label class="field-label" for="inp-auth-pass">Contraseña (mín. 4 caracteres)</label>
+        <div class="input-row">
+          <input
+            type="password"
+            id="inp-auth-pass"
+            minlength="4"
+            placeholder="Tu contraseña"
+            autocomplete="new-password"
+            required
+          />
+          <button type="button" class="btn-ghost toggle-pass" data-target="inp-auth-pass">Ver</button>
+        </div>
+
+        <!-- Selector de avatar solo visible al crear cuenta -->
+        <div id="register-avatar-section" class="hidden">
+          <label class="field-label">Elige un Avatar Predeterminado (estilo consola) o sube una foto ligera:</label>
+          <div class="avatar-preview-bar">
+            <div class="avatar-circle lg" id="reg-avatar-preview">🐺</div>
+            <div class="avatar-actions-col">
+              <label class="btn btn-secondary btn-sm file-label">
+                📷 Subir de Galería (auto-comprimido)
+                <input type="file" id="inp-reg-photo" accept="image/*" hidden />
+              </label>
+              <span class="tiny muted">Se reduce automáticamente a pocos KB para cuidar la base.</span>
+            </div>
+          </div>
+          <div class="preset-avatars-grid" id="reg-preset-grid"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btn-auth-submit">Continuar</button>
+      </form>
+      <div class="msg-box" id="msg-auth"></div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       APLICACIÓN PRINCIPAL (ACTIVA TRAS INICIAR SESIÓN)
+       ========================================================= -->
+  <div id="app-shell" class="hidden">
+    <!-- BARRA SUPERIOR CON NOMBRE DE WEB + USUARIO + TUERCA + SALIR ROJO -->
+    <header class="topbar">
+      <div class="topbar-left" id="admin-basic-trigger" title="Sistema">
+        <span class="logo-diamond">◈</span>
+        <span class="site-name">AETHER VAULT</span>
+      </div>
+
+      <div class="topbar-right">
+        <div class="coin-pill" title="Tu saldo actual">
+          <span>🪙</span>
+          <strong id="hud-coins">0</strong>
+        </div>
+
+        <div class="user-pill">
+          <span class="avatar-circle sm" id="hud-avatar">🐺</span>
+          <span class="hud-username" id="hud-username">@usuario</span>
+        </div>
+
+        <button type="button" class="icon-btn" id="btn-open-settings" title="Configuración visual y avatar">
+          ⚙️
+        </button>
+
+        <button type="button" class="btn-logout-red" id="btn-logout">
+          Cerrar sesión
+        </button>
+      </div>
+    </header>
+
+    <!-- BARRA DE APARTADOS DEBAJO DE LA BARRA SUPERIOR -->
+    <nav class="subnav-bar" id="main-nav">
+      <button type="button" class="nav-tab active" data-view="view-shop">🛍️ Tienda</button>
+      <button type="button" class="nav-tab" data-view="view-earn">⚡ Ganar Monedas</button>
+      <button type="button" class="nav-tab" data-view="view-gift">🎁 Regalar</button>
+      <button type="button" class="nav-tab" data-view="view-purchases">📦 Mis Canjes</button>
+    </nav>
+
+    <!-- CONTENEDOR DE VISTAS -->
+    <main class="main-container">
+      <!-- =====================================================
+           APARTADO 1: TIENDA VIRTUAL ESTILO TEMU
+           ===================================================== -->
+      <section id="view-shop" class="app-view">
+        <div class="section-header">
+          <div>
+            <span class="badge-pill">CATÁLOGO DE RECOMPENSAS</span>
+            <h2>Tienda Virtual</h2>
+          </div>
+          <div class="search-wrap">
+            <input type="search" id="inp-shop-search" placeholder="Buscar producto..." />
+          </div>
+        </div>
+
+        <!-- Cuadrícula compacta estilo Temu -->
+        <div class="temu-grid" id="shop-products-grid"></div>
+      </section>
+
+      <!-- =====================================================
+           APARTADO 2: GANAR MONEDAS (TEMPORIZADOR + MÓDULOS)
+           ===================================================== -->
+      <section id="view-earn" class="app-view hidden">
+        <!-- Barra de Temporizador Activo Anti-AFK -->
+        <div class="glass-card afk-card">
+          <div class="afk-info">
+            <span class="badge-pill">TEMPORIZADOR ACTIVO ANTI-AFK</span>
+            <h3>Presencia Activa en la Web</h3>
+            <p class="muted small">
+              Solo avanza mientras tienes esta pestaña abierta y visible. Cuando se llene la barra, reclama tu bono antes de que expire.
+            </p>
+            <div class="progress-track">
+              <div class="progress-fill" id="afk-progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="afk-meta">
+              <span id="afk-timer-text">Esperando actividad...</span>
+              <span id="afk-reward-label">Recompensa: +10 🪙</span>
+            </div>
+          </div>
+          <div class="afk-action">
+            <button type="button" class="btn btn-gold hidden" id="btn-claim-afk">
+              ⚡ ¡Reclamar Bono (<span id="afk-countdown">15</span>s)!
+            </button>
+          </div>
+        </div>
+
+        <!-- Selector de Módulos de Habilidad y Juegos -->
+        <div class="modules-nav" id="earn-modules-tabs">
+          <button type="button" class="mod-btn active" data-mod="mod-defense">🛡️ Defensa Táctica</button>
+          <button type="button" class="mod-btn" data-mod="mod-riddles">🧩 Acertijos</button>
+          <button type="button" class="mod-btn" data-mod="mod-memory">🧠 Memoria</button>
+          <button type="button" class="mod-btn" data-mod="mod-quiz">📚 Cultura / Mates</button>
+          <button type="button" class="mod-btn" data-mod="mod-reflex">⚡ Reflejos</button>
+        </div>
+
+        <!-- Módulo A: Juego de Defensa por Oleadas (Canvas visual) -->
+        <div id="mod-defense" class="glass-card earn-module">
+          <div class="mod-head">
+            <div>
+              <h3>Defensa del Núcleo (Estilo Estrategia por Carriles)</h3>
+              <p class="muted small">Coloca torretas de energía en los carriles antes de que los drones crucen la línea izquierda.</p>
+            </div>
+            <div class="mod-reward-tag" id="tag-reward-defense">+25 🪙 por victoria</div>
+          </div>
+          <div class="defense-hud">
+            <span>Energía: <strong id="def-energy">100</strong> ⚡</span>
+            <span>Oleada: <strong id="def-wave">1 / 3</strong></span>
+            <span>Integridad: <strong id="def-hp">100%</strong></span>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-start-defense">▶ Iniciar Batalla</button>
+          </div>
+          <div class="defense-tools">
+            <button type="button" class="turret-pick active" data-turret="pulse" data-cost="40">
+              🔵 Torre Pulso (40⚡)
+            </button>
+            <button type="button" class="turret-pick" data-turret="frost" data-cost="60">
+              ❄️ Torre Criogénica (60⚡)
+            </button>
+            <button type="button" class="turret-pick" data-turret="generator" data-cost="35">
+              🔋 Reactor Energía (35⚡)
+            </button>
+          </div>
+          <canvas id="defense-canvas" width="640" height="300"></canvas>
+          <div class="msg-box" id="msg-defense"></div>
+        </div>
+
+        <!-- Módulo B: Acertijos de Lógica (Cargados por el Admin) -->
+        <div id="mod-riddles" class="glass-card earn-module hidden">
+          <div class="mod-head">
+            <div>
+              <h3>Módulo de Acertijos de Lógica</h3>
+              <p class="muted small">Lee con calma y escribe la respuesta exacta para ganar monedas.</p>
+            </div>
+            <div class="mod-reward-tag" id="tag-reward-riddles">+15 🪙</div>
+          </div>
+          <div id="riddle-box" class="challenge-panel"></div>
+          <div class="msg-box" id="msg-riddles"></div>
+        </div>
+
+        <!-- Módulo C: Secuencia de Memoria -->
+        <div id="mod-memory" class="glass-card earn-module hidden">
+          <div class="mod-head">
+            <div>
+              <h3>Módulo de Secuencia de Memoria</h3>
+              <p class="muted small">Observa el patrón iluminado y repítelo sin equivocarte.</p>
+            </div>
+            <div class="mod-reward-tag" id="tag-reward-memory">+15 🪙</div>
+          </div>
+          <div class="memory-grid" id="earn-memory-grid"></div>
+          <button type="button" class="btn btn-primary" id="btn-start-memory">▶ Iniciar Secuencia</button>
+          <div class="msg-box" id="msg-memory"></div>
+        </div>
+
+        <!-- Módulo D: Preguntas de Cultura y Matemáticas Rápidas -->
+        <div id="mod-quiz" class="glass-card earn-module hidden">
+          <div class="mod-head">
+            <div>
+              <h3>Cultura General & Matemáticas Rápidas</h3>
+              <p class="muted small">Responde antes de que se agote el reloj de la pregunta.</p>
+            </div>
+            <div class="mod-reward-tag" id="tag-reward-quiz">+12 🪙</div>
+          </div>
+          <div id="quiz-box" class="challenge-panel"></div>
+          <div class="msg-box" id="msg-quiz"></div>
+        </div>
+
+        <!-- Módulo E: Prueba de Reflejos -->
+        <div id="mod-reflex" class="glass-card earn-module hidden">
+          <div class="mod-head">
+            <div>
+              <h3>Módulo de Reflejos de Precisión</h3>
+              <p class="muted small">Espera a que el reactor cambie a azul brillante y pulsa lo más rápido posible (3 rondas).</p>
+            </div>
+            <div class="mod-reward-tag" id="tag-reward-reflex">+10 🪙</div>
+          </div>
+          <button type="button" class="reflex-pad idle" id="btn-reflex-pad">
+            Pulsa aquí para comenzar la prueba de reflejos
+          </button>
+          <div class="msg-box" id="msg-reflex"></div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           APARTADO 3: REGALAR MONEDAS ENTRE USUARIOS
+           ===================================================== -->
+      <section id="view-gift" class="app-view hidden">
+        <div class="glass-card narrow-card">
+          <span class="badge-pill">TRANSFERENCIA DIRECTA</span>
+          <h2>Regalar Monedas a Otro Usuario</h2>
+          <p class="muted small">
+            Escribe el nombre de usuario exacto de la persona y el monto que deseas transferir. Se descontará de tu saldo y pasará al suyo.
+          </p>
+          <form id="form-gift-coins" autocomplete="off">
+            <label class="field-label" for="inp-gift-to">Usuario destinatario</label>
+            <input type="text" id="inp-gift-to" placeholder="Ej. maria_ch" required />
+
+            <label class="field-label" for="inp-gift-amount">
+              Cantidad a regalar (Máximo permitido: <span id="lbl-max-gift">500</span> 🪙)
+            </label>
+            <input type="number" id="inp-gift-amount" min="1" placeholder="Ej. 25" required />
+
+            <button type="submit" class="btn btn-primary">🎁 Enviar Regalo</button>
+          </form>
+          <div class="msg-box" id="msg-gift"></div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           APARTADO 4: MIS CANJES Y ENLACES DESBLOQUEADOS
+           ===================================================== -->
+      <section id="view-purchases" class="app-view hidden">
+        <div class="glass-card">
+          <span class="badge-pill">HISTORIAL DE COMPRAS</span>
+          <h2>Productos Desbloqueados</h2>
+          <p class="muted small">Aquí quedan guardados los enlaces de todo lo que has comprado o canjeado con código VIP.</p>
+          <div class="purchases-list" id="my-purchases-list"></div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           APARTADO 5: CONFIGURACIÓN VISUAL DEL USUARIO (TUERCA)
+           ===================================================== -->
+      <section id="view-settings" class="app-view hidden">
+        <div class="glass-card">
+          <div class="section-header">
+            <div>
+              <span class="badge-pill">PERSONALIZACIÓN</span>
+              <h2>Configuración de Perfil y Apariencia</h2>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-close-settings">← Volver</button>
+          </div>
+
+          <div class="settings-block">
+            <h3>1. Tema de la Interfaz</h3>
+            <div class="theme-switch-row">
+              <button type="button" class="theme-opt active" data-settheme="dark">🌑 Modo Oscuro (Azul Neón)</button>
+              <button type="button" class="theme-opt" data-settheme="light">☀️ Modo Claro (Blanco & Azul)</button>
+            </div>
+          </div>
+
+          <div class="settings-block">
+            <h3>2. Tono de Acento Azul</h3>
+            <div class="accent-row">
+              <button type="button" class="accent-swatch active" data-setaccent="cyan">Azul Cian Neón</button>
+              <button type="button" class="accent-swatch" data-setaccent="cobalt">Azul Cobalto</button>
+              <button type="button" class="accent-swatch" data-setaccent="electric">Azul Eléctrico</button>
+            </div>
+          </div>
+
+          <div class="settings-block">
+            <h3>3. Cambiar tu Avatar</h3>
+            <p class="muted tiny">Tu usuario y contraseña son permanentes, pero puedes cambiar tu avatar cuando quieras.</p>
+            <div class="avatar-preview-bar">
+              <div class="avatar-circle lg" id="set-avatar-preview">🐺</div>
+              <label class="btn btn-secondary btn-sm file-label">
+                📷 Elegir Foto de Galería (Auto-comprimida)
+                <input type="file" id="inp-set-photo" accept="image/*" hidden />
+              </label>
+            </div>
+            <div class="preset-avatars-grid" id="set-preset-grid"></div>
+            <button type="button" class="btn btn-primary" id="btn-save-avatar">💾 Guardar Avatar</button>
+            <div class="msg-box" id="msg-settings"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- =========================================================
+       MODAL DETALLE DE PRODUCTO (ESTILO TEMU + COMPRA O CÓDIGO VIP)
+       ========================================================= -->
+  <div id="modal-product-detail" class="modal-backdrop hidden">
+    <div class="glass-card modal-box">
+      <div class="modal-top">
+        <span class="badge-pill" id="det-stock-badge">DISPONIBLE</span>
+        <button type="button" class="icon-btn" id="btn-close-product">✕</button>
+      </div>
+
+      <div class="det-cover" id="det-cover-box"></div>
+      <h2 id="det-title">Título del Producto</h2>
+      <p class="muted" id="det-desc">Descripción completa del producto.</p>
+
+      <div class="det-price-row">
+        <span>Precio:</span>
+        <strong class="price-big"><span id="det-price">0</span> 🪙</strong>
+      </div>
+
+      <!-- Opción A: Comprar con monedas -->
+      <button type="button" class="btn btn-primary" id="btn-buy-product">
+        🛒 Comprar con Monedas
+      </button>
+
+      <!-- Opción B: Canjear con Código VIP alternativo -->
+      <div class="vip-redeem-box">
+        <label class="field-label" for="inp-product-vip">¿Tienes un Código VIP para este producto?</label>
+        <div class="input-row">
+          <input type="text" id="inp-product-vip" placeholder="Ingresa código VIP" autocomplete="off" />
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-redeem-vip">Canjear VIP</button>
+        </div>
+      </div>
+
+      <div class="msg-box" id="msg-product-detail"></div>
+
+      <!-- Caja de enlace desbloqueado tras compra o VIP -->
+      <div id="det-unlocked-link-box" class="unlocked-box hidden">
+        <div class="badge-pill ok-pill">ENLACE DESBLOQUEADO</div>
+        <div class="url-readout" id="det-final-url"></div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btn-copy-unlocked">📋 Copiar Enlace</button>
+          <a class="btn btn-primary" id="btn-visit-unlocked" href="#" target="_blank" rel="noopener noreferrer">🚀 Abrir Enlace</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL CLAVE ADMINISTRADOR NIVEL 1 (BÁSICO)
+       ========================================================= -->
+  <div id="modal-admin1-login" class="modal-backdrop hidden">
+    <div class="glass-card modal-box narrow-modal">
+      <span class="badge-pill">ACCESO NIVEL 1</span>
+      <h2>Administrador Básico</h2>
+      <p class="muted small">Ingresa la clave de Administrador Básico (se solicita cada vez que entras).</p>
+      <form id="form-admin1-login" autocomplete="off">
+        <input type="password" id="inp-admin1-pass" placeholder="Clave Administrador Básico" autocomplete="new-password" required />
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-admin1">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Entrar</button>
+        </div>
+      </form>
+      <div class="msg-box" id="msg-admin1-login"></div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PANEL ADMINISTRADOR NIVEL 1 (BÁSICO: PRODUCTOS + DISPARADOR AL PRINCIPAL)
+       ========================================================= -->
+  <div id="modal-admin1-panel" class="modal-backdrop hidden">
+    <div class="glass-card modal-box wide-modal">
+      <div class="modal-top">
+        <!-- Disparador oculto (5 toques aquí abre la clave del Administrador Principal) -->
+        <div class="admin-title-trigger" id="trigger-admin-principal" title="Panel de Gestión">
+          <span class="badge-pill">ADMINISTRADOR BÁSICO</span>
+          <h2>Gestión de Productos</h2>
+        </div>
+        <button type="button" class="icon-btn" id="btn-close-admin1-panel">✕</button>
+      </div>
+
+      <form id="form-product-admin" class="admin-form-grid" autocomplete="off">
+        <input type="hidden" id="adm-prod-id" />
+        <input type="text" id="adm-prod-title" placeholder="Nombre del producto" required />
+        <textarea id="adm-prod-desc" rows="2" placeholder="Descripción detallada del producto"></textarea>
+
+        <div class="two-cols">
+          <input type="number" id="adm-prod-price" min="0" placeholder="Precio en monedas (Ej. 150)" required />
+          <input type="number" id="adm-prod-stock" min="-1" placeholder="Stock (-1 = ilimitado)" value="-1" required />
+        </div>
+
+        <select id="adm-prod-cover-type">
+          <option value="emoji">Portada tipo Texto / Emojis (sin imagen)</option>
+          <option value="url">Portada con URL de Imagen</option>
+        </select>
+
+        <input type="text" id="adm-prod-cover-value" placeholder="Escribe emojis/texto (Ej. 🎮 PACK VIP) o pega https://..." required />
+        <input type="url" id="adm-prod-link" placeholder="Enlace de entrega al comprar (Drive, MediaFire, web...)" required />
+        <input type="text" id="adm-prod-vip" placeholder="Código VIP opcional (Ej. REGALO2026)" />
+
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="btn-save-product">💾 Guardar Producto</button>
+          <button type="button" class="btn btn-secondary hidden" id="btn-cancel-prod-edit">Cancelar Edición</button>
+        </div>
+      </form>
+      <div class="msg-box" id="msg-admin1-prod"></div>
+
+      <div class="divider"></div>
+      <h3>Catálogo Publicado</h3>
+      <div class="admin-list" id="admin1-products-list"></div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL CLAVE ADMINISTRADOR PRINCIPAL (SUPERIOR)
+       ========================================================= -->
+  <div id="modal-admin2-login" class="modal-backdrop hidden">
+    <div class="glass-card modal-box narrow-modal">
+      <span class="badge-pill">NIVEL SUPERIOR</span>
+      <h2>Administrador Principal</h2>
+      <p class="muted small">Introduce la clave maestra del Administrador Principal.</p>
+      <form id="form-admin2-login" autocomplete="off">
+        <input type="password" id="inp-admin2-pass" placeholder="Clave Administrador Principal" autocomplete="new-password" required />
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-admin2">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Desbloquear Todo</button>
+        </div>
+      </form>
+      <div class="msg-box" id="msg-admin2-login"></div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PANEL ADMINISTRADOR PRINCIPAL (ECONOMÍA, RETOS, USUARIOS Y CLAVES)
+       ========================================================= -->
+  <div id="modal-admin2-panel" class="modal-backdrop hidden">
+    <div class="glass-card modal-box wide-modal">
+      <div class="modal-top">
+        <div>
+          <span class="badge-pill">ADMINISTRADOR PRINCIPAL</span>
+          <h2>Control Total del Sistema</h2>
+        </div>
+        <button type="button" class="icon-btn" id="btn-close-admin2-panel">✕</button>
+      </div>
+
+      <div class="modules-nav" id="admin2-tabs">
+        <button type="button" class="mod-btn active" data-adm2="adm2-economy">⚖️ Economía & Reglas</button>
+        <button type="button" class="mod-btn" data-adm2="adm2-challenges">🧩 Retos & Preguntas</button>
+        <button type="button" class="mod-btn" data-adm2="adm2-users">👥 Usuarios & Monedas</button>
+        <button type="button" class="mod-btn" data-adm2="adm2-keys">🔐 Claves</button>
+      </div>
+
+      <!-- Tab 1: Equilibrio económico y recompensas por módulo -->
+      <div id="adm2-economy" class="adm2-section">
+        <form id="form-economy-rules" class="admin-form-grid">
+          <div class="two-cols">
+            <div>
+              <label class="field-label">Bono Temporizador Anti-AFK (🪙)</label>
+              <input type="number" id="cfg-afk-reward" min="1" />
+            </div>
+            <div>
+              <label class="field-label">Segundos para llenar barra AFK</label>
+              <input type="number" id="cfg-afk-seconds" min="15" />
+            </div>
+          </div>
+
+          <div class="two-cols">
+            <div>
+              <label class="field-label">Premio Defensa Táctica (🪙)</label>
+              <input type="number" id="cfg-rew-defense" min="1" />
+            </div>
+            <div>
+              <label class="field-label">Premio Acertijos (🪙)</label>
+              <input type="number" id="cfg-rew-riddles" min="1" />
+            </div>
+          </div>
+
+          <div class="two-cols">
+            <div>
+              <label class="field-label">Premio Memoria (🪙)</label>
+              <input type="number" id="cfg-rew-memory" min="1" />
+            </div>
+            <div>
+              <label class="field-label">Premio Cultura / Mates (🪙)</label>
+              <input type="number" id="cfg-rew-quiz" min="1" />
+            </div>
+          </div>
+
+          <div class="two-cols">
+            <div>
+              <label class="field-label">Premio Reflejos (🪙)</label>
+              <input type="number" id="cfg-rew-reflex" min="1" />
+            </div>
+            <div>
+              <label class="field-label">Máx. monedas por regalo entre usuarios</label>
+              <input type="number" id="cfg-max-gift" min="1" />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">💾 Guardar Equilibrio Económico</button>
+        </form>
+        <div class="msg-box" id="msg-adm2-eco"></div>
+      </div>
+
+      <!-- Tab 2: Agregar / Borrar Acertijos y Preguntas -->
+      <div id="adm2-challenges" class="adm2-section hidden">
+        <form id="form-add-challenge" class="admin-form-grid" autocomplete="off">
+          <select id="adm-ch-type">
+            <option value="riddle">🧩 Acertijo de Lógica</option>
+            <option value="quiz">📚 Pregunta Cultura / Matemáticas</option>
+          </select>
+          <input type="text" id="adm-ch-question" placeholder="Escribe el acertijo o pregunta..." required />
+          <input type="text" id="adm-ch-answer" placeholder="Respuesta exacta correcta" required />
+          <input type="text" id="adm-ch-options" placeholder="Si es Cultura/Mates: 4 opciones separadas por coma (Ej. 12, 14, 16, 18)" />
+          <button type="submit" class="btn btn-primary">➕ Agregar al Banco de Retos</button>
+        </form>
+        <div class="msg-box" id="msg-adm2-ch"></div>
+        <div class="divider"></div>
+        <div class="admin-list" id="adm2-challenges-list"></div>
+      </div>
+
+      <!-- Tab 3: Usuarios registrados, conexiones y ajuste silencioso de monedas -->
+      <div id="adm2-users" class="adm2-section hidden">
+        <div class="row-between">
+          <p class="muted tiny">Actividad actualizada automáticamente cada 10 minutos (o al pulsar refrescar).</p>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-users">🔄 Actualizar ahora</button>
+        </div>
+        <div class="admin-list" id="adm2-users-list"></div>
+        <div class="msg-box" id="msg-adm2-users"></div>
+      </div>
+
+      <!-- Tab 4: Cambiar Clave Universal, Clave Admin Básico y Clave Admin Principal -->
+      <div id="adm2-keys" class="adm2-section hidden">
+        <form id="form-update-keys" class="admin-form-grid" autocomplete="off">
+          <label class="field-label">Nueva Clave Universal (dejar vacío para no cambiar)</label>
+          <input type="password" id="new-key-universal" placeholder="Nueva clave universal" autocomplete="new-password" />
+
+          <label class="field-label">Nueva Clave Administrador Básico</label>
+          <input type="password" id="new-key-admin1" placeholder="Nueva clave admin básico" autocomplete="new-password" />
+
+          <label class="field-label">Nueva Clave Administrador Principal</label>
+          <input type="password" id="new-key-admin2" placeholder="Nueva clave admin principal" autocomplete="new-password" />
+
+          <button type="submit" class="btn btn-primary">🔑 Actualizar Claves en Base de Datos</button>
+        </form>
+        <div class="msg-box" id="msg-adm2-keys"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
