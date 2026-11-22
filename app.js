@@ -9,9 +9,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_t1eycoNAsTFzAzKyNy83EA_18lQMzYV";
 
 
 
-// 1) REEMPLAZA ESTOS DOS VALORES CON LOS DE TU PROYECTO EN SUPABASE
-const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-const SUPABASE_ANON_KEY = "TU-CLAVE-PUBLICA-ANON-KEY";
 
 const sbClient =
   window.supabase && SUPABASE_URL.startsWith("http") && !SUPABASE_URL.includes("TU-PROYECTO")
