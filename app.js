@@ -350,10 +350,11 @@ document.getElementById("form-auth").addEventListener("submit", async (e) => {
       .select()
       .single();
 
-    if (error || !created) {
-      showMsg(msgAuth, "No se pudo crear la cuenta en la base de datos.");
+        if (error || !created) {
+      showMsg(msgAuth, "Error real: " + (error?.message || error?.code || "sin detalle"));
       return;
-    }
+        }
+    
 
     await enterVaultSession(created);
   } else {
